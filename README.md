@@ -1,6 +1,10 @@
 # Gemini Memory Engine 🧠
 
-A universal personal memory layer powered by Google's **Gemini Embedding 2** — the first natively multimodal embedding model that puts text, images, audio, video, and documents in the same vector space.
+> ⚠️ **DEPRECATED** — As of [OpenClaw 2026.3.11](https://docs.openclaw.ai/concepts/memory), Gemini Embedding 2 is natively integrated into OpenClaw's memory search with multimodal indexing, hybrid search (BM25 + vector), MMR diversity, temporal decay, and embedding caching. This standalone tool is no longer actively maintained. See the [OpenClaw memory docs](https://docs.openclaw.ai/concepts/memory) for the built-in solution.
+
+---
+
+A standalone personal memory layer powered by Google's **Gemini Embedding 2**, the first natively multimodal embedding model that puts text, images, audio, video, and documents in the same vector space.
 
 Capture anything. Recall by meaning. Zero server required.
 
@@ -56,7 +60,7 @@ Because all modalities live in the same embedding space, you can search across t
 ### Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/gemini-memory-engine.git
+git clone https://github.com/SilentKnight87/gemini-memory-engine.git
 cd gemini-memory-engine
 pip install -r requirements.txt
 export GEMINI_API_KEY="your-key-here"
@@ -87,7 +91,7 @@ python capture.py --text "The Thai place on 5th Ave was incredible" --tags food 
 # See what would be ingested (no API calls)
 python ingest_vault.py --dry-run
 
-# Ingest just one folder (recommended first run)
+# Ingest just one folder
 python ingest_vault.py --folder 03_Projects
 
 # Ingest the entire vault
@@ -130,9 +134,6 @@ python recall.py "meeting about budget" --tag work
 # Search only Obsidian notes
 python recall.py "cybercab fleet business plan" --tag obsidian
 
-# Search only OpenClaw sessions
-python recall.py "what did I discuss last week" --tag openclaw
-
 # JSON output (for piping to other tools)
 python recall.py "vacation plans" --json
 
@@ -143,61 +144,12 @@ python recall.py --list
 python recall.py --stats
 ```
 
-## Peter's Setup
-
-This is how I use the Gemini Memory Engine as part of my personal AI stack:
-
-```
-┌──────────────────────────────────────────────────────────┐
-│                    Obsidian LifeOS Vault                  │
-│         ~/Documents/Obsidian/LifeOS/                     │
-│   Daily logs • Projects • Research • Weekly reviews      │
-│                    (Tier 0: source of truth)              │
-└────────────────────────┬─────────────────────────────────┘
-                         │  ingest_vault.py
-                         ▼
-┌──────────────────────────────────────────────────────────┐
-│              Gemini Memory Engine (ChromaDB)              │
-│            Tier 3: on-demand semantic retrieval           │
-│    "What changed since last week?"                       │
-│    "Find my notes about X from 3 months ago"             │
-└────────────────────────┬─────────────────────────────────┘
-                         │  recall.py --json
-                         ▼
-┌──────────────────────────────────────────────────────────┐
-│                       OpenClaw Agent                     │
-│    Session logs, voice notes, daily interactions         │
-│          ingest_openclaw.py feeds back in                │
-└──────────────────────────────────────────────────────────┘
-```
-
-**The memory model has 4 tiers:**
-
-| Tier | What | How |
-|------|------|-----|
-| 0 | Vault is the source of truth | Obsidian, plain markdown |
-| 1 | Session continuity | Agent summaries, context windows |
-| 2 | Core memories | Curated facts, capped at 20-40 items |
-| 3 | Semantic retrieval | **This project** — on-demand search by meaning |
-
-**When to add a semantic memory layer:**
-- You're re-explaining the same context to your AI weekly
-- You need "what changed since last week?" queries
-- You want proactive monitoring of your notes
-
 ## How It Works
 
 1. **Capture**: Detect file type → embed with Gemini Embedding 2 → store vector + metadata in ChromaDB
 2. **Recall**: Embed your query → cosine similarity search → return top-k matches with scores
 
-The model outputs 768-dimensional vectors by default (configurable to 1536 or 3072). All modalities — text, image, audio, video, PDF — land in the same vector space, so cross-modal search works out of the box.
-
-## Configuration
-
-| Environment Variable | Default | Description |
-|---|---|---|
-| `GEMINI_API_KEY` | (required) | Your Google AI API key |
-| `MEMORY_DB_PATH` | `~/.memory/chromadb` | Where ChromaDB stores vectors |
+The model outputs 768-dimensional vectors by default (configurable to 1536 or 3072). All modalities land in the same vector space, so cross-modal search works out of the box.
 
 ## Supported File Types
 
@@ -217,26 +169,28 @@ The model outputs 768-dimensional vectors by default (configurable to 1536 or 30
 - **Deterministic IDs**: File path + mtime hash prevents duplicates on re-capture.
 - **No frameworks**: Raw Gemini SDK + ChromaDB. No LangChain, no LlamaIndex. Fewer dependencies, easier to understand.
 
-## OpenClaw Integration
+## Configuration
 
-This tool works well as an [OpenClaw](https://openclaw.com) skill. Wire `capture.py` into your agent's workflow to automatically index documents, voice notes, screenshots, and more. Use `recall.py --json` for structured output your agent can reason over.
+| Environment Variable | Default | Description |
+|---|---|---|
+| `GEMINI_API_KEY` | (required) | Your Google AI API key |
+| `MEMORY_DB_PATH` | `~/.memory/chromadb` | Where ChromaDB stores vectors |
 
-```bash
-# Agent captures a screenshot
-python capture.py screenshot.png --tags agent auto-captured
+## Why Deprecated?
 
-# Agent recalls context for a conversation
-python recall.py "project deadlines this week" --json --top 3
-```
+This project was built as a proof-of-concept the week Gemini Embedding 2 launched (March 2026). It demonstrated that multimodal semantic search over personal data was practical with ~200 lines of Python and zero infrastructure.
 
-## Roadmap
+[OpenClaw 2026.3.11](https://github.com/openclaw/openclaw) subsequently shipped native Gemini Embedding 2 support that exceeds this tool's capabilities:
 
-- [ ] Watch mode: auto-capture new files in a directory
-- [ ] Chunking for large documents
-- [ ] Web UI for browsing memories
-- [ ] Export/import for backup
-- [ ] Obsidian plugin for in-vault search
-- [ ] OpenClaw skill wrapper (auto-capture inbound messages)
+- **Hybrid search** (BM25 + vector) for both semantic and keyword matching
+- **MMR re-ranking** to deduplicate near-identical results
+- **Temporal decay** so recent memories rank higher
+- **Embedding cache** to avoid re-embedding unchanged content
+- **Multimodal indexing** of images and audio files
+- **File watching** with automatic reindexing on changes
+- **Session transcript indexing** for conversation recall
+
+The code here remains available as a reference implementation for anyone building standalone multimodal search without a platform dependency.
 
 ## License
 

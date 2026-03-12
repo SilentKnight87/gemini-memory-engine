@@ -1,11 +1,10 @@
-.env
-*.env
 __pycache__/
 *.pyc
 *.pyo
-.DS_Store
-~/.memory/
-.memory/
-*.db
+*.egg-info/
+.env
+.chroma/
 *.sqlite
-chromadb/
+.memory/
+dist/
+build/
